@@ -1,6 +1,12 @@
 import { CheckoutAPI, Client } from "@adyen/api-library";
 import { v4 as uuidv4 } from "uuid";
 
+enum ChannelEnum {
+  IOs = "iOS",
+  Android = "Android",
+  Web = "Web",
+}
+
 enum RecurringProcessingModelEnum {
   CardOnFile = "CardOnFile",
   Subscription = "Subscription",
@@ -15,8 +21,7 @@ enum ShopperInteractionEnum {
 }
 
 const client = new Client({
-  apiKey:
-    "AQEshmfxKo7HYhJGw0m/n3Q5qf3Ve6xsLJBJV3BY0kIkSokHt3yWdfR3J7sA76oQwV1bDb7kfNy1WIxIIkxgBw==-XFKIDB/DpYSoNqPcKZjMBosKyv1SF/aU6BcNvcBthDo=-MV+K#%S@=6cA}@vM",
+  apiKey: process.env.ADYEN_API_KEY!,
   environment: "TEST",
 });
 
@@ -25,17 +30,37 @@ export const POST = async (req: Request) => {
   const checkoutAPI = new CheckoutAPI(client);
   const id = uuidv4();
   const response = await checkoutAPI.PaymentsApi.sessions({
-    merchantAccount: "SGAAccountECOM",
+    // const response = await checkoutAPI.sessions({
+    merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT!,
     amount: {
       value: amount,
-      currency: "CNY",
+      currency: "USD",
     },
-    returnUrl: "http://localhost:3000/payment-success",
+    channel: ChannelEnum.Web,
+    returnUrl: "http://localhost:3001/payment-success",
+    shopperReference: "test-shopper",
+    shopperEmail: "longfeng.lian@unity3d.com",
     shopperInteraction: ShopperInteractionEnum.Ecommerce,
     recurringProcessingModel: RecurringProcessingModelEnum.CardOnFile,
     storePaymentMethod: true,
     reference: id,
-    countryCode: "NL",
+    countryCode: "US",
+    applicationInfo: {
+      merchantApplication: {
+        name: "Ecommerce",
+        version: "1",
+      },
+      externalPlatform: {
+        name: "commercetools",
+        integrator: "ILT",
+      },
+    },
+    riskData: {
+      customFields: {
+        tenant: "online",
+        productTypeOnInvoice: "prepaid",
+      },
+    },
   });
   return new Response(JSON.stringify(response), {
     headers: { "content-type": "application/json" },

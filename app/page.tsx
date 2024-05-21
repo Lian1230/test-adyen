@@ -15,13 +15,13 @@ export default function Home() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ amount: 100 }),
+      body: JSON.stringify({ amount: 200 }),
     }).then((res) => res.json());
     console.log("session", session);
 
     const checkout = await AdyenCheckout({
-      environment: "test", // Change to 'live' for the live environment.
-      clientKey: "test_X6ONWN7NSJBANPXBILMO4XJPDEMXYL3G",
+      environment: "test",
+      clientKey: process.env.NEXT_PUBLIC_ADYEN_CLIENT_KEY,
       analytics: { enabled: false },
       session: {
         id: session.id,
