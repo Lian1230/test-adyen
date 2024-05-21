@@ -1,32 +1,44 @@
-import { CheckoutAPI, Client } from "@adyen/api-library";
-import { v4 as uuidv4 } from "uuid";
+import { CheckoutAPI, Client } from '@adyen/api-library';
+import { v4 as uuidv4 } from 'uuid';
 
 enum ChannelEnum {
-  IOs = "iOS",
-  Android = "Android",
-  Web = "Web",
+  IOs = 'iOS',
+  Android = 'Android',
+  Web = 'Web',
 }
 
 enum RecurringProcessingModelEnum {
-  CardOnFile = "CardOnFile",
-  Subscription = "Subscription",
-  UnscheduledCardOnFile = "UnscheduledCardOnFile",
+  CardOnFile = 'CardOnFile',
+  Subscription = 'Subscription',
+  UnscheduledCardOnFile = 'UnscheduledCardOnFile',
 }
 
 enum ShopperInteractionEnum {
-  Ecommerce = "Ecommerce",
-  ContAuth = "ContAuth",
-  Moto = "Moto",
-  Pos = "POS",
+  Ecommerce = 'Ecommerce',
+  ContAuth = 'ContAuth',
+  Moto = 'Moto',
+  Pos = 'POS',
+}
+
+enum StorePaymentMethodModeEnum {
+  AskForConsent = 'askForConsent',
+  Disabled = 'disabled',
+  Enabled = 'enabled',
 }
 
 const client = new Client({
   apiKey: process.env.ADYEN_API_KEY!,
-  environment: "TEST",
+  environment: 'TEST',
 });
 
 export const POST = async (req: Request) => {
-  const { amount } = await req.json();
+  const { amount, returnUrl } = await req.json();
+  if (!amount || !returnUrl) {
+    return new Response('amount and returnUrl are required', {
+      status: 400,
+    });
+  }
+
   const checkoutAPI = new CheckoutAPI(client);
   const id = uuidv4();
   const response = await checkoutAPI.PaymentsApi.sessions({
@@ -34,35 +46,42 @@ export const POST = async (req: Request) => {
     merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT!,
     amount: {
       value: amount,
-      currency: "USD",
+      currency: 'USD',
     },
     channel: ChannelEnum.Web,
-    returnUrl: "http://localhost:3001/payment-success",
-    shopperReference: "test-shopper",
-    shopperEmail: "longfeng.lian@unity3d.com",
-    shopperInteraction: ShopperInteractionEnum.Ecommerce,
+    returnUrl,
+    shopperEmail: 'longfeng.lian@unity3d.com',
+
+    // recurringProcessingModel: RecurringProcessingModelEnum.CardOnFile,
     recurringProcessingModel: RecurringProcessingModelEnum.CardOnFile,
+    //Indicates the sales channel through which the shopper gives their card details,
+    //for online transactions, this is Ecommerce.
+    //For subsequent payments, indicates whether the shopper is a returning customer (ContAuth).
+    shopperInteraction: ShopperInteractionEnum.Ecommerce,
     storePaymentMethod: true,
+    shopperReference: 'test-recurrent-shopper',
+    // storePaymentMethodMode: StorePaymentMethodModeEnum.Enabled,
+
     reference: id,
-    countryCode: "US",
+    countryCode: 'US',
     applicationInfo: {
       merchantApplication: {
-        name: "Ecommerce",
-        version: "1",
+        name: 'Ecommerce',
+        version: '1',
       },
       externalPlatform: {
-        name: "commercetools",
-        integrator: "ILT",
+        name: 'commercetools',
+        integrator: 'ILT',
       },
     },
     riskData: {
       customFields: {
-        tenant: "online",
-        productTypeOnInvoice: "prepaid",
+        tenant: 'online',
+        productTypeOnInvoice: 'prepaid',
       },
     },
   });
   return new Response(JSON.stringify(response), {
-    headers: { "content-type": "application/json" },
+    headers: { 'content-type': 'application/json' },
   });
 };

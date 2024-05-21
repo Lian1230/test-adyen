@@ -1,0 +1,25 @@
+{
+  "live": "false",
+  "notificationItems": [
+    {
+      "NotificationRequestItem": {
+        "additionalData": {
+          "hmacSignature": "cr9MhQzyev7cSCIjZ7eRKzZttrCgwexbEh9kXnk4QFQ=",
+          "checkoutSessionId": "CS6A4C86AFE687B759"
+        },
+        "amount": {
+          "currency": "USD",
+          "value": 300
+        },
+        "eventCode": "AUTHORISATION",
+        "eventDate": "2024-05-21T14:36:24+02:00",
+        "merchantAccountCode": "SGAAccountECOM",
+        "merchantReference": "86568ad7-693a-4a71-bb85-066cc0b1d9ea",
+        "paymentMethod": "alipay",
+        "pspReference": "QZMRPKZH2WNM9J65",
+        "reason": "Acquirer Error",
+        "success": "false"
+      }
+    }
+  ]
+}

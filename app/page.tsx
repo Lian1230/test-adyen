@@ -1,21 +1,22 @@
 "use client";
 import AdyenCheckout from "@adyen/adyen-web";
 import "@adyen/adyen-web/dist/adyen.css";
+import { Unstable_NumberInput as BaseNumberInput } from "@mui/base/Unstable_NumberInput";
 import { LoadingButton } from "@mui/lab";
+import { TextField } from "@mui/material";
 import Image from "next/image";
 import { useState } from "react";
 
 export default function Home() {
+  const [amount, setAmount] = useState<number>(1);
   const [loading, setLoading] = useState(false);
 
   const createPayment = async () => {
     setLoading(true);
     const session = await fetch("/api/sessions", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ amount: 200 }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: amount * 100, returnUrl: `${location.origin}/payment-success` }),
     }).then((res) => res.json());
     console.log("session", session);
 
@@ -44,7 +45,9 @@ export default function Home() {
       },
     });
     console.log(checkout.paymentMethodsResponse); //{ "paymentMethods": [ { "brands": [ "mc", "visa", "amex" ], "name": "Cards", "type": "scheme" }, { "name": "AliPay", "type": "alipay" } ], "storedPaymentMethods": [] }
-    const dropinComponent = checkout.create('dropin').mount('#dropin-container');
+    const dropinComponent = checkout
+      .create("dropin")
+      .mount("#dropin-container");
     // checkout.create("alipay").mount("#adyen-container");
     setLoading(false);
   };
@@ -61,6 +64,14 @@ export default function Home() {
           priority
         />
       </div>
+
+      <TextField
+        label="Amount($)"
+        type="number"
+        value={amount}
+        variant="standard"
+        onChange={(event) => setAmount(event.target.value as any)}
+      />
 
       <LoadingButton
         loading={loading}
