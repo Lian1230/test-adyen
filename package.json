@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@adyen/adyen-web": "^5.64.0",
-    "@adyen/api-library": "^17.0.0",
+    "@adyen/adyen-web": "^6.0.3",
+    "@adyen/api-library": "^18.1.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@mui/lab": "^5.0.0-alpha.170",

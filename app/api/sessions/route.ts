@@ -1,4 +1,5 @@
 import { CheckoutAPI, Client } from '@adyen/api-library';
+import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 
 enum ChannelEnum {
@@ -20,68 +21,74 @@ enum ShopperInteractionEnum {
   Pos = 'POS',
 }
 
-enum StorePaymentMethodModeEnum {
-  AskForConsent = 'askForConsent',
-  Disabled = 'disabled',
-  Enabled = 'enabled',
-}
+// Adyen API Key required base64 encoded to handle the escape characters:
+const ADYEN_API_KEY = Buffer.from(process.env.ADYEN_API_KEY!, 'base64').toString('utf-8');
+
+console.log({
+  ADYEN_MERCHANT_ACCOUNT: process.env.ADYEN_MERCHANT_ACCOUNT,
+  ADYEN_API_KEY,
+});
 
 const client = new Client({
-  apiKey: process.env.ADYEN_API_KEY!,
+  apiKey: ADYEN_API_KEY,
   environment: 'TEST',
 });
 
+type Body = {
+  currency: string;
+  amount: number;
+  returnUrl: string;
+};
+
 export const POST = async (req: Request) => {
-  const { amount, returnUrl } = await req.json();
-  if (!amount || !returnUrl) {
-    return new Response('amount and returnUrl are required', {
+  const { currency, amount, returnUrl } = (await req.json()) as Body;
+  if (!currency || !amount || !returnUrl) {
+    return new Response('currency, amount and returnUrl are required', {
       status: 400,
     });
   }
 
-  const checkoutAPI = new CheckoutAPI(client);
-  const id = uuidv4();
-  const response = await checkoutAPI.PaymentsApi.sessions({
-    // const response = await checkoutAPI.sessions({
-    merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT!,
-    amount: {
-      value: amount,
-      currency: 'USD',
-    },
-    channel: ChannelEnum.Web,
-    returnUrl,
-    shopperEmail: 'longfeng.lian@unity3d.com',
+  try {
+    const checkoutAPI = new CheckoutAPI(client);
+    const id = uuidv4();
+    const response = await checkoutAPI.PaymentsApi.sessions({
+      amount: {
+        value: amount,
+        currency,
+      },
+      channel: ChannelEnum.Web,
+      reference: id,
+      returnUrl,
+      merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT!,
+      shopperEmail: 'longfeng.lian@unity3d.com',
+      shopperReference: 'test-recurrent-shopper',
+      shopperInteraction: ShopperInteractionEnum.Ecommerce,
+      recurringProcessingModel: RecurringProcessingModelEnum.Subscription,
+      storePaymentMethod: true,
+      // storePaymentMethodMode: StorePaymentMethodModeEnum.Enabled,
 
-    // recurringProcessingModel: RecurringProcessingModelEnum.CardOnFile,
-    recurringProcessingModel: RecurringProcessingModelEnum.CardOnFile,
-    //Indicates the sales channel through which the shopper gives their card details,
-    //for online transactions, this is Ecommerce.
-    //For subsequent payments, indicates whether the shopper is a returning customer (ContAuth).
-    shopperInteraction: ShopperInteractionEnum.Ecommerce,
-    storePaymentMethod: true,
-    shopperReference: 'test-recurrent-shopper',
-    // storePaymentMethodMode: StorePaymentMethodModeEnum.Enabled,
+      countryCode: 'US',
+      applicationInfo: {
+        merchantApplication: {
+          name: 'Ecommerce',
+          version: '1',
+        },
+        externalPlatform: {
+          name: 'commercetools',
+          integrator: 'ILT',
+        },
+      },
+      riskData: {
+        customFields: {
+          tenant: 'online',
+          productTypeOnInvoice: 'prepaid',
+        },
+      },
+    });
 
-    reference: id,
-    countryCode: 'US',
-    applicationInfo: {
-      merchantApplication: {
-        name: 'Ecommerce',
-        version: '1',
-      },
-      externalPlatform: {
-        name: 'commercetools',
-        integrator: 'ILT',
-      },
-    },
-    riskData: {
-      customFields: {
-        tenant: 'online',
-        productTypeOnInvoice: 'prepaid',
-      },
-    },
-  });
-  return new Response(JSON.stringify(response), {
-    headers: { 'content-type': 'application/json' },
-  });
+    return NextResponse.json(response);
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 };
